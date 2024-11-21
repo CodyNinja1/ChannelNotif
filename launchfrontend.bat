@@ -1,0 +1,1 @@
+py C:/Users/HP/Code/python/ChannelNotif/frontend.pyx
