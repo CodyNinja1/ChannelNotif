@@ -104,19 +104,21 @@ class Settings:
 
 def ResetSettings():
     try:
-        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Settings().ToJson())
-    except FileNotFoundError:
-        makedirs(str(Path.home()) + "\\Documents\\ChannelNotif\\")
-        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Settings().ToJson())
+        try:
+            open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Settings().ToJson())
+        except FileNotFoundError:
+            makedirs(str(Path.home()) + "\\Documents\\ChannelNotif\\")
+            open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Settings().ToJson())
     except FileExistsError:
         open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "w").write(Settings().ToJson())
 
 def SetSettings(Setting: Settings):
     try:
-        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Setting.ToJson())
-    except FileNotFoundError:
-        makedirs(str(Path.home()) + "\\Documents\\ChannelNotif\\")
-        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Setting.ToJson())
+        try:
+            open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Setting.ToJson())
+        except FileNotFoundError:
+            makedirs(str(Path.home()) + "\\Documents\\ChannelNotif\\")
+            open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Setting.ToJson())
     except FileExistsError:
         open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "w").write(Setting.ToJson())
 

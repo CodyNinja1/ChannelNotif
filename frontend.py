@@ -1,2 +1,8 @@
+from Log import Logger
+
+Log = Logger()
+
 def Launch():
-    print("[FRONTEND] Frontend Launched")
+    Log.Log("[FRONTEND] Frontend Launched")
+
+    
