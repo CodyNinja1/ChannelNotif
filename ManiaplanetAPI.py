@@ -3,6 +3,14 @@ import requests as Req
 import numpy
 from typing import Literal
 import re
+from datetime import datetime
+import pytz
+from tzlocal.win32 import get_localzone_name
+from math import floor
+
+def GetUtcOffset():
+    tz = pytz.timezone(get_localzone_name())
+    return (floor(tz.utcoffset(datetime.now()).total_seconds()) // 3600) - 1
 
 class Channel:
     def __init__(self, Name: str, Id: int, ImageUrl: str):
@@ -213,14 +221,7 @@ def GetScheduleA(Shootmania: bool = False):
     return SortedArrSched.tolist()
 
 def GetChannelA(Shootmania: bool = False):
-    from datetime import datetime
-    import pytz
-    from tzlocal.win32 import get_localzone_name
-    from math import floor
-
-    get_localzone_name()
     tz = pytz.timezone(get_localzone_name())
-    Offset = (floor(tz.utcoffset(datetime.now()).total_seconds()) // 3600) - 1
     Day = datetime.now(tz=tz).weekday()
     Hour = datetime.now(tz=tz).hour
 
@@ -241,7 +242,7 @@ def GetChannelA(Shootmania: bool = False):
             return RShift(abs(i), al)
         return Shift(i, al)
     
-    return ShiftA(-Offset, GetScheduleA(Shootmania=Shootmania)[Day])[Hour]
+    return ShiftA(-GetUtcOffset(), GetScheduleA(Shootmania=Shootmania)[Day])[Hour]
 
 def GetTitleDownloadLinkA(TitleID: str):
     Web = Req.get(f"https://maniaplanet.com/webservices/titles/{TitleID}")

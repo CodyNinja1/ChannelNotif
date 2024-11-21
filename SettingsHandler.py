@@ -71,24 +71,226 @@ class UpdateSettings:
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
+class FavouriteSettings:
+    def __init__(self):
+        self.Favourites: dict[int, list[list[bool]]] = {0: [
+            [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ]], 1: [
+            [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ], [False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False, 
+             False, False
+            ]]}
+    
+    def ToJson(self):
+        # Convert the dictionary into JSON format
+        return json.dumps(self.Favourites, indent=4)
+
+    def FromJson(self, JsonStr: str):
+        try:
+            data = json.loads(JsonStr)
+            if isinstance(data, dict):
+                # Validate that keys are integers and values are lists of lists of booleans
+                validated_data = {}
+                for key, value in data.items():
+                    if isinstance(key, str) and key.isdigit():
+                        key = int(key)  # Convert string keys to integers
+                    if isinstance(key, int) and isinstance(value, list) and all(
+                        isinstance(sublist, list) and all(isinstance(item, bool) for item in sublist)
+                        for sublist in value
+                    ):
+                        validated_data[key] = value
+                self.Favourites = validated_data
+            else:
+                print("Error: JSON does not represent a dictionary.")
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"Error decoding JSON: {e}")
+
 class Settings:
     def __init__(self):
         self.Notifications = NotifSettings()
         self.Updates = UpdateSettings()
-    
+        self.Favourites = FavouriteSettings()
+
     def ToJson(self):
         return json.dumps({
             "notifications": json.loads(self.Notifications.ToJson()),
-            "updates": json.loads(self.Updates.ToJson())
+            "updates": json.loads(self.Updates.ToJson()),
+            "favourites": json.loads(self.Favourites.ToJson())
         }, indent=4)
 
     def FromJson(self, JsonStr: str):
         try:
-            Data = json.loads(JsonStr)
-            if "notifications" in Data and isinstance(Data["notifications"], dict):
-                self.Notifications.FromJson(json.dumps(Data["notifications"]))
-            if "updates" in Data and isinstance(Data["updates"], dict):
-                self.Updates.FromJson(json.dumps(Data["updates"]))
+            data = json.loads(JsonStr)
+            if "notifications" in data and isinstance(data["notifications"], dict):
+                self.Notifications.FromJson(json.dumps(data["notifications"]))
+            if "updates" in data and isinstance(data["updates"], dict):
+                self.Updates.FromJson(json.dumps(data["updates"]))
+            if "favourites" in data and isinstance(data["favourites"], dict):
+                self.Favourites.FromJson(json.dumps(data["favourites"]))
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
     
