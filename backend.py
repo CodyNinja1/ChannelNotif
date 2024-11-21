@@ -2,6 +2,7 @@ from ManiaplanetAPI import *
 from datetime import datetime
 from ToastWrapper import Notify
 from frontend import Launch
+
 Hour = datetime.now().hour
 PHour = Hour
 
