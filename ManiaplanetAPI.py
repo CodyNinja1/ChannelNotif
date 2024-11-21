@@ -4,7 +4,17 @@ import numpy
 from typing import Literal
 import re
 
+class Channel:
+    def __init__(self, Name: str, Id: int, ImageUrl: str):
+        self.RawName = Name
+        self.Id = Id
+        self.ImageUrl = ImageUrl
+        self.Name = RemoveTMFormatting(Name)
+        
 Environment = Literal['Storm', 'Canyon', 'Valley', 'Stadium', 'Lagoon', 'United']
+
+def DictToChannel(Json: dict) -> Channel:
+    return Channel(Json['program_name'], Json['program_id'], Json['program_grid_url'])
 
 def RemoveTMFormatting(Str: str) -> str:
     return re.sub(r"\$(?:(\$)|[0-9a-fA-F]{2,3}|[lh]\[.*?\]|[lh]\[|.)", "", Str)
