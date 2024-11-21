@@ -2,15 +2,9 @@ from ManiaplanetAPI import *
 from datetime import datetime
 from ToastWrapper import Notify
 from Frontend import Launch
-from SettingsHandler import GetSettings, SetSettings
+from SettingsHandler import GetSettings
 
 Hour = datetime.now().hour
 PHour = Hour
 
-print(GetSettings().ToJson())
-
-S = GetSettings()
-S.Notifications.AlertEveryChannel = True
-SetSettings(S)
-
-print(GetSettings().ToJson())
+Notify('Test', '123', GetSettings().Notifications.PerformOnClick)

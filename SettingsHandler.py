@@ -1,13 +1,16 @@
 import json
 from typing import Literal
 from pathlib import Path
-from os import makedirs
+from os import makedirs, system
+from Frontend import Launch
 
 class NotifSettings:
     def __init__(self):
+        self.SteamAppIdTable: dict[Literal["Lagoon", "Valley", "Storm", "Stadium", "Canyon"], int] = {"Lagoon": "600720", "Valley": "243360", "Stadium": "232910", "Storm": "229870", "Canyon": "228760"}
         self.AppId: str = "ChannelNotif"
         self.OnClick: Literal["Steam", "Exe", "Frontend", "Nothing"] = "Frontend"
         self.Game: Literal["Lagoon", "Valley", "Storm", "Stadium", "Canyon"] = "Lagoon"
+        self.Exe: str = ""
         self.AlertEveryChannel: bool = False
     
     def ToJson(self):
@@ -15,6 +18,7 @@ class NotifSettings:
             "appid": self.AppId,
             "onclick": self.OnClick,
             "game": self.Game,
+            "exe": self.Exe,
             "alerteverychannel": self.AlertEveryChannel
         }, indent=4)
 
@@ -27,11 +31,24 @@ class NotifSettings:
                 self.OnClick = Data["onclick"]
             if "game" in Data and Data["game"] in {"Lagoon", "Valley", "Storm", "Stadium", "Canyon"}:
                 self.Game = Data["game"]
+            if "exe" in Data:
+                self.exe = Data["exe"]
             if "alerteverychannel" in Data and isinstance(Data["alerteverychannel"], bool):
                 self.AlertEveryChannel = Data["alerteverychannel"]
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
+    def PerformOnClick(self):
+        match self.OnClick:
+            case "Steam":
+                system("explorer steam://rungameid/" + self.SteamAppIdTable[self.Game])
+                return
+            case "Frontend":
+                Launch()
+            case "Exe":
+                system(self.Exe)
+            case "Nothing":
+                pass
 
 class UpdateSettings:
     def __init__(self):
