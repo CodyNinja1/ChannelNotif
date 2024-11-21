@@ -1,5 +1,7 @@
 import json
 from typing import Literal
+from pathlib import Path
+from os import makedirs
 
 class NotifSettings:
     def __init__(self):
@@ -18,15 +20,15 @@ class NotifSettings:
 
     def FromJson(self, JsonStr: str):
         try:
-            data = json.loads(JsonStr)
-            if "appid" in data and isinstance(data["appid"], str):
-                self.AppId = data["appid"]
-            if "onclick" in data and data["onclick"] in {"Steam", "Exe", "Frontend", "Nothing"}:
-                self.OnClick = data["onclick"]
-            if "game" in data and data["game"] in {"Lagoon", "Valley", "Storm", "Stadium", "Canyon"}:
-                self.Game = data["game"]
-            if "alerteverychannel" in data and isinstance(data["alerteverychannel"], bool):
-                self.AlertEveryChannel = data["alerteverychannel"]
+            Data = json.loads(JsonStr)
+            if "appid" in Data and isinstance(Data["appid"], str):
+                self.AppId = Data["appid"]
+            if "onclick" in Data and Data["onclick"] in {"Steam", "Exe", "Frontend", "Nothing"}:
+                self.OnClick = Data["onclick"]
+            if "game" in Data and Data["game"] in {"Lagoon", "Valley", "Storm", "Stadium", "Canyon"}:
+                self.Game = Data["game"]
+            if "alerteverychannel" in Data and isinstance(Data["alerteverychannel"], bool):
+                self.AlertEveryChannel = Data["alerteverychannel"]
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
@@ -44,11 +46,11 @@ class UpdateSettings:
 
     def FromJson(self, JsonStr: str):
         try:
-            data = json.loads(JsonStr)
-            if "autocheckforupdates" in data and isinstance(data["autocheckforupdates"], bool):
-                self.AutoCheckForUpdates = data["autocheckforupdates"]
-            if "version" in data and isinstance(data["version"], str):
-                self.Version = data["version"]
+            Data = json.loads(JsonStr)
+            if "autocheckforupdates" in Data and isinstance(Data["autocheckforupdates"], bool):
+                self.AutoCheckForUpdates = Data["autocheckforupdates"]
+            if "version" in Data and isinstance(Data["version"], str):
+                self.Version = Data["version"]
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
@@ -65,10 +67,43 @@ class Settings:
 
     def FromJson(self, JsonStr: str):
         try:
-            data = json.loads(JsonStr)
-            if "notifications" in data and isinstance(data["notifications"], dict):
-                self.Notifications.FromJson(json.dumps(data["notifications"]))
-            if "updates" in data and isinstance(data["updates"], dict):
-                self.Updates.FromJson(json.dumps(data["updates"]))
+            Data = json.loads(JsonStr)
+            if "notifications" in Data and isinstance(Data["notifications"], dict):
+                self.Notifications.FromJson(json.dumps(Data["notifications"]))
+            if "updates" in Data and isinstance(Data["updates"], dict):
+                self.Updates.FromJson(json.dumps(Data["updates"]))
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
+    
+    def FromFile(self, FilePath: str):
+        try:
+            with open(FilePath, "r") as File:
+                Json = File.read()
+                self.FromJson(Json)
+        except FileNotFoundError:
+            print(f"Error: The file '{FilePath}' does not exist.")
+        except IOError as e:
+            print(f"Error reading file '{FilePath}': {e}")
+
+def ResetSettings():
+    try:
+        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Settings().ToJson())
+    except FileNotFoundError:
+        makedirs(str(Path.home()) + "\\Documents\\ChannelNotif\\")
+        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Settings().ToJson())
+    except FileExistsError:
+        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "w").write(Settings().ToJson())
+
+def SetSettings(Setting: Settings):
+    try:
+        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Setting.ToJson())
+    except FileNotFoundError:
+        makedirs(str(Path.home()) + "\\Documents\\ChannelNotif\\")
+        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "x").write(Setting.ToJson())
+    except FileExistsError:
+        open(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json", "w").write(Setting.ToJson())
+
+def GetSettings():
+    Setting = Settings()
+    Setting.FromFile(str(Path.home()) + "\\Documents\\ChannelNotif\\settings.json")
+    return Setting
