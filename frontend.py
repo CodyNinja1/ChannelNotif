@@ -17,10 +17,12 @@ def InitUi(UiMgr: UiManager, Log: Logger):
     UiMgr.CreateButton() # Back
 
 def MenuMain(UiMgr: UiManager, Setting: Settings):
-    UiMgr.Text("ChannelNotif", Nat2(50, 160), 0)
+    UiMgr.Text("ChannelNotif", Nat2(40, 160), 0)
 
-    UiMgr.Button(f"Play ({Setting.Notifications.OnClick})", Nat2(50, 220), Setting.Notifications.PerformOnClick, 0, 1)
-    UiMgr.Button("", Nat2(210, 220), lambda: UiMgr.ChangeActiveMenu("Settings"), 1, 2)
+    ButtonRect = UiMgr.Button(f"Play ({Setting.Notifications.OnClick})", Nat2(50, 220), Setting.Notifications.PerformOnClick, 0, 1)
+    SettingsButtonPos = Nat2(50, 220)
+    SettingsButtonPos = Nat2(SettingsButtonPos.X + ButtonRect.WH.X, SettingsButtonPos.Y)
+    UiMgr.Button("", SettingsButtonPos, lambda: UiMgr.ChangeActiveMenu("Settings"), 1, 2)
 
     UiMgr.TextWrapped("Message de test..\nbalblalba...\nthis is a message,\ndo you want to machiner le bordel,\nou dou you prefer to stroumpher le strouchmpf?\nplease say!", 
                       Nat2(360, 160), 1)
@@ -29,7 +31,7 @@ def MenuSettings(UiMgr: UiManager, Setting: Settings):
     UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 2, 2)
 
 def MenuSchedule(UiMgr: UiManager, Setting: Settings):
-    pass
+    UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 2, 2)
 
 def Launch():
     Log = Logger()

@@ -22,6 +22,9 @@ class Nat2:
         # If adding an unsupported type, raise an error
         else:
             return NotImplemented
+    
+    def __repr__(self):
+        return f'Nat2({self.X}, {self.Y})'
         
 class Rect:
     def __init__(self, XY: Nat2, WH: Nat2):
@@ -191,7 +194,9 @@ class UiManager:
             self.Buttons[ButtonIdx] = False
 
         self.Rect(Pos + -10, ButtonRect.WH, Color=Color)
-        self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1))   
+        self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1))  
+
+        return Rect(Pos + -10, ButtonRect.WH) 
 
     def Rect(self, Pos: Nat2, Size: Nat2, Color: Vec4 = Vec4(1, 0, 1, 1)):
         """Draw a rectangle on the surface."""
