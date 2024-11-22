@@ -233,15 +233,20 @@ class UiManager:
         sdl2.SDL_FreeSurface(TextSurface)
         return RRect
 
+    def TextWrapped(self, Str: str, Pos: Nat2, FontIdx: int, Color: Vec4 = Vec4(0.8, 0.8, 0.8, 1)):
+        Strings = Str.split("\n")
+        for Idx, String in enumerate(Strings):
+            self.Text(String, Pos + Nat2(0, Idx * 16), FontIdx=FontIdx, Color=Color)
+
     def MainLoop(self):
         """Render each frame."""
-        self.Update()
         while sdl2.SDL_PollEvent(ctypes.byref(self.Event)) != 0:
             if self.Event.type == sdl2.SDL_QUIT:
                 self.Running = False
                 break
         
         sdl2.SDL_RenderPresent(self.Renderer)
+        self.Update()
         sdl2.SDL_Delay(10)
 
     def Quit(self):

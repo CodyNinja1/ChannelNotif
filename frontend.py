@@ -1,54 +1,61 @@
 from Log import Logger
 from Ui import *
 from ManiaplanetAPI import GetChannelA, DictToChannel
-from SettingsHandler import GetSettings
-from time import sleep
+from SettingsHandler import GetSettings, Settings
+
+def InitUi(UiMgr: UiManager, Log: Logger):
+    UiMgr.LoadFont("Fonts/GeistMonoLight.ttf", 32)
+    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 16)
+    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 11)
+    Log.Log("[FRONTEND] Fonts loaded")
+
+    # Main Menu
+    UiMgr.CreateButton() # Play
+    UiMgr.CreateButton() # Settings
+
+    # Settings
+    UiMgr.CreateButton() # Back
+
+def MenuMain(UiMgr: UiManager, Setting: Settings):
+    UiMgr.Text("ChannelNotif", Nat2(50, 160), 0)
+
+    UiMgr.Button(f"Play ({Setting.Notifications.OnClick})", Nat2(50, 220), Setting.Notifications.PerformOnClick, 0, 1)
+    UiMgr.Button("", Nat2(210, 220), lambda: UiMgr.ChangeActiveMenu("Settings"), 1, 2)
+
+    UiMgr.TextWrapped("Message de test..\nbalblalba...\nthis is a message,\ndo you want to machiner le bordel,\nou dou you prefer to stroumpher le strouchmpf?\nplease say!", 
+                      Nat2(360, 160), 1)
+
+def MenuSettings(UiMgr: UiManager, Setting: Settings):
+    UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 2, 2)
+
+def MenuSchedule(UiMgr: UiManager, Setting: Settings):
+    pass
 
 def Launch():
     Log = Logger()
     Log.Log("[FRONTEND] Frontend Launched.")
 
-    ChannelTM = DictToChannel(GetChannelA())
-    ChannelSM = DictToChannel(GetChannelA(True))
-
     Log.Log("[FRONTEND] Channels loaded from API")
     UiMgr = UiManager()
-    UiMgr.LoadImageFromUrl(ChannelTM.ImageUrl + "?width=424&height=240")
 
-    Settings = GetSettings()
-
-    UiMgr.LoadFont("Fonts/GeistMonoLight.ttf", 32)
-    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 16)
-    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 11)
-    Log.Log("[FRONTEND] Fonts loaded")
-    UiMgr.CreateButton()
-    UiMgr.CreateButton()
+    InitUi(UiMgr, Log)
+    Setting = GetSettings()
 
     Log.Log("[FRONTEND] Hello, world!")
-    Log.Log(f"[FRONTEND] ChannelNotif {Settings.Updates.Version}")
+    Log.Log(f"[FRONTEND] ChannelNotif {Setting.Updates.Version}")
 
     while UiMgr.Running:
-        # Clear the screen
         sdl2.SDL_RenderClear(UiMgr.Renderer)
-        
-        # Draw the background rectangle (black)
         UiMgr.Rect(Nat2(0, 0), Nat2(848, 480), Color=Vec4(0, 0, 0, 1))
 
-        if UiMgr.ActiveMenu == "Main":
-            # Draw text for the app name
-            UiMgr.Text("ChannelNotif", Nat2(40, 160), 0)
-            
-            # Draw buttons for play and settings
-            UiMgr.Button(f"Play ({Settings.Notifications.OnClick})", Nat2(50, 220), Settings.Notifications.PerformOnClick, 0, 1)
-            UiMgr.Button("", Nat2(200, 220), lambda: UiMgr.ChangeActiveMenu("Settings"), 1, 2)
+        match UiMgr.ActiveMenu:
+            case "Main":
+                MenuMain(UiMgr, Setting)
+            case "Settings":
+                MenuSettings(UiMgr, Setting)
+            case "Schedule":
+                MenuSchedule(UiMgr, Setting)
 
-            # Draw active channel info
-            UiMgr.Text("Active channel:", Nat2(380, 130), 1)
-
-            # Render the image at the specified position (380, 160)
-            UiMgr.RenderImage(0, Nat2(380, 160))
-        
-        # Update the UI state (handles events, etc.)
         UiMgr.MainLoop()
     
     Log.Log("[FRONTEND] Exiting")
