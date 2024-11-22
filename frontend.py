@@ -8,10 +8,6 @@ ChannelTM = Channel("", -1, "")
 ChannelSM = Channel("", -1, "")
 
 def InitUi(UiMgr: UiManager, Log: Logger):
-    global ChannelTM, ChannelSM
-    ChannelTM = DictToChannel(GetChannelA())
-    ChannelSM = DictToChannel(GetChannelA(True))
-
     UiMgr.LoadFont("Fonts/GeistMonoLight.ttf", 32)
     UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 16)
     UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 11)
@@ -37,36 +33,13 @@ def SetTooltip(String: str):
 
 def MenuMain(UiMgr: UiManager, Setting: Settings):
     global ChannelTM, ChannelSM
-    global Tooltip
-    UiMgr.Text("ChannelNotif", Nat2(40, 40), 0)
-
-    ButtonRect = UiMgr.Button(f"Play Trackmania (via {Setting.Notifications.OnClick})", Nat2(50, 220), Setting.Notifications.PerformOnClick, 0, 1)
-    ButtonRect = UiMgr.Button(f"Play Shootmania (via {Setting.Notifications.OnClick})", Nat2(50, 261), lambda: Setting.Notifications.PerformOnClick(True), 1, 1)
-    SettingsButtonPos = Nat2(50, 220)
-    SettingsButtonPos = Nat2(SettingsButtonPos.X + ButtonRect.WH.X, SettingsButtonPos.Y)
-    UiMgr.Button("", SettingsButtonPos, lambda: UiMgr.ChangeActiveMenu("Settings"), 2, 2)
-
-    if UiMgr.Buttons[2][1]:
-        SetTooltip("Settings.")
-    elif UiMgr.Buttons[1][1]:
-        SetTooltip("Shootmania channel:\n" + ChannelSM.Name)
-    elif UiMgr.Buttons[0][1]:
-        SetTooltip("Trackmania channel:\n" + ChannelTM.Name)
-    else:
-        SetTooltip("")
+    pass
 
 def MenuSettings(UiMgr: UiManager, Setting: Settings):
-    UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 3, 2)
-    UiMgr.Text("Settings", Nat2(40, 40), 0)
-    Ate = UiMgr.Checkbox("Option 1", Nat2(100, 100), Vec4(0.8, 0.8, 0.8, 1), Vec4(0.3, 1, 0.3, 1))
-    if Ate:
-        UiMgr.TextWrapped("Some sort of warning that\ntakes multiple lines to make", 
-                        Nat2(115, 130), 1)
-        UiMgr.Checkbox("Option 2", Nat2(100, 180), Vec4(0.8, 0.8, 0.8, 1), Vec4(1, 0.3, 0.3, 1))
+    pass
 
 def MenuSchedule(UiMgr: UiManager, Setting: Settings):
-    UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 2, 2)
-    UiMgr.Text("Schedule", Nat2(40, 40), 0)
+    pass
 
 def RenderTooltip(UiMgr: UiManager):
     global Tooltip
@@ -77,6 +50,9 @@ def Launch():
     Log = Logger()
     Log.Log("[FRONTEND] Frontend Launched.")
 
+    global ChannelTM, ChannelSM
+    ChannelTM = DictToChannel(GetChannelA())
+    ChannelSM = DictToChannel(GetChannelA(True))
     Log.Log("[FRONTEND] Channels loaded from API")
     UiMgr = UiManager()
 

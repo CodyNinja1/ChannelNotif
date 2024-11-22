@@ -20,7 +20,7 @@ while True:
                 if Settings.Notifications.PerformOnClick():
                     Launch()
             if Notify('New shootmania channel', DictToChannel(GetChannelA(True)).Name):
-                if Settings.Notifications.PerformOnClick():
+                if Settings.Notifications.PerformOnClick(True):
                     Launch()
         else:
             Day = datetime.now(tz=tz).weekday()
@@ -34,7 +34,7 @@ while True:
                         Launch()
             if Shootmania:
                 if Notify('New shootmania channel', DictToChannel(GetChannelA(True)).Name):
-                    if Settings.Notifications.PerformOnClick():
+                    if Settings.Notifications.PerformOnClick(True):
                         Launch()
 
     sleep(1)
