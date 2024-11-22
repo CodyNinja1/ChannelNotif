@@ -69,65 +69,79 @@ class UiManager:
         # Initialize the list to store images and textures
         self.Images: list = []  # List to store surfaces
         self.Textures: list = []  # List to store textures
+        self.CheckboxStates: dict = {}
 
-    def LoadImageFromUrl(self, Url: str):
-        """Load an image from the given URL and store it in the Images list."""
-        # Fetch the image data from the URL
-        response = requests.get(Url)
-        response.raise_for_status()  # Raise an error if the request failed
-        
-        # Open the image using PIL
-        img = Image.open(BytesIO(response.content))
-        img = img.convert("RGBA")  # Ensure the image is in RGBA format
-        
-        # Get the image width and height
-        width, height = img.size
-        
-        # Convert the image to raw bytes and create an SDL surface
-        img_data = img.tobytes()
-        sdl_surface = sdl2.SDL_CreateRGBSurfaceFrom(
-            img_data, width, height, 32, width * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
-        )
-        
-        # Check if surface creation succeeded
-        if not sdl_surface:
-            raise RuntimeError(f"Failed to create SDL surface from image: {sdl2.SDL_GetError().decode('utf-8')}")
+    def RectBorder(self, Pos: Nat2, Size: Nat2, Color: Vec4 = Vec4(0.8, 0.8, 0.8, 1), Thickness: int = 1):
+        """
+        Draws a border for a rectangle at a specified position and size using `self.Rect`.
 
-        # Create a texture from the SDL surface
-        texture = sdl2.SDL_CreateTextureFromSurface(self.Renderer, sdl_surface)
-        
-        # Check if texture creation succeeded
-        if not texture:
-            raise RuntimeError(f"Failed to create texture from surface: {sdl2.SDL_GetError().decode('utf-8')}")
+        Parameters:
+            Pos (Nat2): Top-left position of the rectangle.
+            Size (Nat2): Width and height of the rectangle.
+            Color (Vec4): RGBA color of the border.
+            Thickness (int): Thickness of the border lines.
+        """
+        # Top border
+        self.Rect(Pos, Nat2(Size.X, Thickness), Color)
+        # Left border
+        self.Rect(Pos, Nat2(Thickness, Size.Y), Color)
+        # Bottom border
+        self.Rect(Nat2(Pos.X, Pos.Y + Size.Y - Thickness), Nat2(Size.X, Thickness), Color)
+        # Right border
+        self.Rect(Nat2(Pos.X + Size.X - Thickness, Pos.Y), Nat2(Thickness, Size.Y), Color)
 
-        # Append the surface and texture to their respective lists
-        self.Images.append(sdl_surface)
-        self.Textures.append(texture)
+    def Checkbox(self, Label: str, Pos: Nat2, ColorBorder: Vec4, ColorInner: Vec4) -> bool:
+        """
+        Render a checkbox UI component and toggle its state when clicked.
 
-    def RenderImage(self, ImageIdx: int, Pos: Nat2):
-        """Render the image stored at ImageIdx to the window at the specified position."""
-        if ImageIdx < 0 or ImageIdx >= len(self.Textures):
-            raise ValueError(f"Image index {ImageIdx} is out of range.")
-        
-        # Get the texture from the Textures list
-        texture = self.Textures[ImageIdx]
-        
-        # Get the width and height of the image from the corresponding SDL surface
-        sdl_surface = self.Images[ImageIdx]
-        image_width = sdl_surface.contents.w
-        image_height = sdl_surface.contents.h
-        
-        # Define the SDL_Rect for the position and size of the image
-        image_rect = sdl2.SDL_Rect(Pos.X, Pos.Y, image_width, image_height)
-        
-        # Clear the screen once at the start of the frame
-        sdl2.SDL_RenderClear(self.Renderer)
-        
-        # Render the texture to the window
-        sdl2.SDL_RenderCopy(self.Renderer, texture, None, ctypes.byref(image_rect))
-        
-        # Present the renderer (update the screen with the new frame)
-        sdl2.SDL_RenderPresent(self.Renderer)
+        Parameters:
+            Label (str): The label to display next to the checkbox.
+            Pos (Nat2): The position of the checkbox (top-left corner of the checkbox).
+            ColorBorder (Vec4): The color of the checkbox border.
+            ColorInner (Vec4): The color of the checkbox when checked.
+
+        Returns:
+            bool: The current state of the checkbox (True for checked, False for unchecked).
+        """
+        # Define the checkbox size
+        CheckboxSize = Nat2(20, 20)
+
+        # Define the checkbox rectangle
+        CheckboxRect = Rect(Pos, CheckboxSize)
+
+        # Draw the checkbox border
+        self.RectBorder(Pos, CheckboxSize, Color=ColorBorder, Thickness=2)
+
+        # Initialize the checkbox states and mouse state tracker if not already
+        if not hasattr(self, "CheckboxStates"):
+            self.CheckboxStates = {}
+        if Label not in self.CheckboxStates:
+            self.CheckboxStates[Label] = {"checked": False, "mouse_down": False}
+
+        # Handle mouse hover and click for toggling the state
+        if self.RectIsHover(CheckboxRect):
+            if not self.CheckboxStates[Label]["checked"]:
+                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), Color=Vec4(0.4, 0.4, 0.4, 1))
+            if self.CheckboxStates[Label]["checked"]:
+                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), Color=ColorInner)
+            if self.IsClick("Left"):
+                # Only toggle state when the mouse button transitions from "up" to "down"
+                if not self.CheckboxStates[Label]["mouse_down"]:
+                    self.CheckboxStates[Label]["checked"] = not self.CheckboxStates[Label]["checked"]
+                    self.CheckboxStates[Label]["mouse_down"] = True
+            else:
+                # Reset the "mouse_down" state when the button is released
+                self.CheckboxStates[Label]["mouse_down"] = False
+
+        # Draw the filled rectangle if checked
+        if self.CheckboxStates[Label]["checked"]:
+            self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), Color=ColorInner)
+
+        # Render the label
+        LabelPos = Pos + Nat2(CheckboxSize.X + 10, 0)
+        self.Text(Label, LabelPos, FontIdx=1, Color=Vec4(0.8, 0.8, 0.8, 1))
+
+        return self.CheckboxStates[Label]["checked"]
 
     def ChangeActiveMenu(self, MenuName: str):
         self.ActiveMenu = MenuName
@@ -176,7 +190,7 @@ class UiManager:
         sdl2.SDL_UpdateWindowSurface(self.Window)
 
     def CreateButton(self):
-        self.Buttons.append(False)
+        self.Buttons.append([False, False])
 
     def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int, FontIdx: int = 0):
         TextRect: Rect = self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1), NoDraw=True)
@@ -185,13 +199,15 @@ class UiManager:
         Color = self.ColorOnHover(ButtonRect, Vec4(0.4, 0.4, 0.4, 1), Vec4(0.2, 0.2, 0.2, 1))
 
         if self.RectIsHover(ButtonRect):
-            if self.IsClick("Left") and not self.Buttons[ButtonIdx]:
+            self.Buttons[ButtonIdx][1] = True
+            if self.IsClick("Left") and not self.Buttons[ButtonIdx][0]:
                 OnClick()
-                self.Buttons[ButtonIdx] = True
-            elif not self.IsClick("Left") and self.Buttons[ButtonIdx]:
-                self.Buttons[ButtonIdx] = False
+                self.Buttons[ButtonIdx][0] = True
+            elif not self.IsClick("Left") and self.Buttons[ButtonIdx][0]:
+                self.Buttons[ButtonIdx][0] = False
         else:
-            self.Buttons[ButtonIdx] = False
+            self.Buttons[ButtonIdx][0] = False
+            self.Buttons[ButtonIdx][1] = False
 
         self.Rect(Pos + -10, ButtonRect.WH, Color=Color)
         self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1))  
@@ -241,6 +257,8 @@ class UiManager:
     def TextWrapped(self, Str: str, Pos: Nat2, FontIdx: int, Color: Vec4 = Vec4(0.8, 0.8, 0.8, 1)):
         Strings = Str.split("\n")
         for Idx, String in enumerate(Strings):
+            if String == "":
+                continue
             self.Text(String, Pos + Nat2(0, Idx * 16), FontIdx=FontIdx, Color=Color)
 
     def MainLoop(self):
