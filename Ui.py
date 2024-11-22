@@ -8,6 +8,11 @@ class Nat2:
         self.X = X
         self.Y = Y
 
+class Rect:
+    def __init__(self, XY: Nat2, WH: Nat2):
+        self.XY = XY
+        self.WH = WH
+
 class Vec4:
     def __init__(self, X: float, Y: float, Z: float, W: float):
         self.X = X
@@ -34,6 +39,9 @@ class UiManager:
         self.Event = sdl2.SDL_Event()
         self.Running: bool = True
         self.Fonts = []  # Placeholder for the loaded font
+
+    def PointInsideRect(self, Point: Nat2, RectPos: Nat2, RectSize: Nat2) -> bool:
+        return RectPos.X <= Point.X <= RectPos.X + RectSize.X and RectPos.Y <= Point.Y <= RectPos.Y + RectSize.Y
 
     def GetCursorPosition(self):
         """Get the current cursor position relative to the window."""
@@ -84,7 +92,7 @@ class UiManager:
         if not Font:
             raise RuntimeError(f"Failed to load font from {Filepath}: {sdl2.SDL_GetError().decode('utf-8')}")
 
-    def Text(self, Str: str, Pos: Nat2, FontIdx: int, Color: Vec4 = Vec4(0, 0, 0, 1)):
+    def Text(self, Str: str, Pos: Nat2, FontIdx: int, Color: Vec4 = Vec4(0, 0, 0, 1)) -> Rect:
         """Render text on the surface."""
         if len(self.Fonts) == 0:
             raise RuntimeError("No font loaded. Use LoadFont() before rendering text.")
@@ -99,12 +107,17 @@ class UiManager:
         
         # Blit the text surface onto the window surface
         TextRect = sdl2.SDL_Rect(Pos.X, Pos.Y, TextSurface.contents.w, TextSurface.contents.h)
+        Rxy = Nat2(TextRect.x, TextRect.y)
+        Rwh = Nat2(TextRect.w, TextRect.h)
+        RRect = Rect(Rxy, Rwh)
         sdl2.SDL_BlitSurface(TextSurface, None, self.Surface, TextRect)
         
         # Free the temporary text surface
         sdl2.SDL_FreeSurface(TextSurface)
+        return RRect
 
     def MainLoop(self):
+        """Render each frame."""
         self.Update()
         while sdl2.SDL_PollEvent(ctypes.byref(self.Event)) != 0:
             if self.Event.type == sdl2.SDL_QUIT:
@@ -114,8 +127,8 @@ class UiManager:
 
     def Quit(self):
         """Clean up resources."""
-        if self.Fonts:
-            sdlttf.TTF_CloseFont(self.Fonts)
+        for Font in self.Fonts:
+            sdlttf.TTF_CloseFont(Font)
         sdl2.SDL_DestroyWindow(self.Window)
         sdl2.SDL_Quit()
         sdlttf.TTF_Quit()
