@@ -50,70 +50,81 @@ class UiManager:
             sdl2.SDL_WINDOWPOS_CENTERED,
             848, 480, sdl2.SDL_WINDOW_SHOWN
         )
-        self.Renderer = sdl2.SDL_CreateRenderer(self.Window, -1, sdl2.SDL_RENDERER_ACCELERATED)
+        
+        # Use SDL_RENDERER_PRESENTVSYNC for smooth rendering and double buffering
+        self.Renderer = sdl2.SDL_CreateRenderer(self.Window, -1, sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC)
+        
+        # Get window surface for legacy purposes (if needed later)
         self.Surface = sdl2.SDL_GetWindowSurface(self.Window)
+        
         self.Event = sdl2.SDL_Event()
         self.Running: bool = True
         self.Fonts = []
         self.Buttons: list[bool] = []
         self.ActiveMenu: Literal["Main", "Settings", "Schedule"] = "Main"
+        
+        # Initialize the list to store images and textures
+        self.Images: list = []  # List to store surfaces
+        self.Textures: list = []  # List to store textures
 
-    def LoadImageFromUrl(self, url: str):
-        """Download an image from the URL and load it into SDL2."""
-        # Step 1: Download the image from the URL
-        response = requests.get(url)
-        img_data = BytesIO(response.content)
-
-        # Step 2: Open the image with PIL
-        pil_image = Image.open(img_data)
-
-        # Step 3: Convert the PIL image to RGBA format (for transparency support)
-        pil_image = pil_image.convert("RGBA")  # Convert to RGBA format
-
-        # Step 4: Convert the image to raw bytes
-        img_data = pil_image.tobytes()
-
-        # Step 5: Create an SDL surface from the raw image data
-        width, height = pil_image.size
-        pitch = width * 4  # 4 bytes per pixel for RGBA
-
-        # Create a ctypes buffer from the raw image data
-        buffer = ctypes.create_string_buffer(img_data)
-
-        # Create an SDL surface from the buffer
-        surface = sdl2.SDL_CreateRGBSurfaceFrom(
-            buffer,
-            width,
-            height,
-            32,  # 32-bit per pixel (RGBA)
-            pitch,
-            0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000  # RGBA masks
+    def LoadImageFromUrl(self, Url: str):
+        """Load an image from the given URL and store it in the Images list."""
+        # Fetch the image data from the URL
+        response = requests.get(Url)
+        response.raise_for_status()  # Raise an error if the request failed
+        
+        # Open the image using PIL
+        img = Image.open(BytesIO(response.content))
+        img = img.convert("RGBA")  # Ensure the image is in RGBA format
+        
+        # Get the image width and height
+        width, height = img.size
+        
+        # Convert the image to raw bytes and create an SDL surface
+        img_data = img.tobytes()
+        sdl_surface = sdl2.SDL_CreateRGBSurfaceFrom(
+            img_data, width, height, 32, width * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
         )
-
-        if not surface:
-            raise Exception("Unable to create SDL surface from image data")
-
-        # Step 6: Create a texture from the surface
-        texture = sdl2.SDL_CreateTextureFromSurface(self.renderer, surface)
-
-        # Free the surface after creating the texture
-        sdl2.SDL_FreeSurface(surface)
-
-        return texture
-
-    def RenderTexture(self, texture, position: Nat2):
-        """Render the texture at the specified position."""
-        # Clear the renderer to avoid flickering
-        sdl2.SDL_RenderClear(self.renderer)
-
-        # Define the destination rectangle based on the Nat2 position
-        dest_rect = sdl2.SDL_Rect(position.x, position.y, 200, 200)  # Set size to 200x200 (or change it)
         
-        # Copy the texture to the renderer at the given position
-        sdl2.SDL_RenderCopy(self.renderer, texture, None, ctypes.byref(dest_rect))
+        # Check if surface creation succeeded
+        if not sdl_surface:
+            raise RuntimeError(f"Failed to create SDL surface from image: {sdl2.SDL_GetError().decode('utf-8')}")
+
+        # Create a texture from the SDL surface
+        texture = sdl2.SDL_CreateTextureFromSurface(self.Renderer, sdl_surface)
         
-        # Present the rendered content to the screen (double-buffering)
-        sdl2.SDL_RenderPresent(self.renderer)
+        # Check if texture creation succeeded
+        if not texture:
+            raise RuntimeError(f"Failed to create texture from surface: {sdl2.SDL_GetError().decode('utf-8')}")
+
+        # Append the surface and texture to their respective lists
+        self.Images.append(sdl_surface)
+        self.Textures.append(texture)
+
+    def RenderImage(self, ImageIdx: int, Pos: Nat2):
+        """Render the image stored at ImageIdx to the window at the specified position."""
+        if ImageIdx < 0 or ImageIdx >= len(self.Textures):
+            raise ValueError(f"Image index {ImageIdx} is out of range.")
+        
+        # Get the texture from the Textures list
+        texture = self.Textures[ImageIdx]
+        
+        # Get the width and height of the image from the corresponding SDL surface
+        sdl_surface = self.Images[ImageIdx]
+        image_width = sdl_surface.contents.w
+        image_height = sdl_surface.contents.h
+        
+        # Define the SDL_Rect for the position and size of the image
+        image_rect = sdl2.SDL_Rect(Pos.X, Pos.Y, image_width, image_height)
+        
+        # Clear the screen once at the start of the frame
+        sdl2.SDL_RenderClear(self.Renderer)
+        
+        # Render the texture to the window
+        sdl2.SDL_RenderCopy(self.Renderer, texture, None, ctypes.byref(image_rect))
+        
+        # Present the renderer (update the screen with the new frame)
+        sdl2.SDL_RenderPresent(self.Renderer)
 
     def ChangeActiveMenu(self, MenuName: str):
         self.ActiveMenu = MenuName
@@ -188,29 +199,7 @@ class UiManager:
         RectSdl = sdl2.SDL_Rect(Pos.X, Pos.Y, Size.X, Size.Y)
         sdl2.SDL_FillRect(self.Surface, RectSdl, sdl2.SDL_MapRGBA(self.Surface.contents.format,
                                                                   ColorSdl.r, ColorSdl.g, ColorSdl.b, ColorSdl.a))
-    def RectGradientHorizontal(self, Pos: Nat2, Size: Nat2, StartColor: Vec4, EndColor: Vec4):
-        """Draw a rectangle with a horizontal gradient, supporting transparency."""
-        # Enable blending on the surface for transparency
-        
-        for x in range(Size.X):
-            # Interpolate the color for this column
-            t = x / Size.X  # Interpolation factor (0.0 to 1.0)
-            interpolated_color = Vec4(
-                StartColor.X + t * (EndColor.X - StartColor.X),
-                StartColor.Y + t * (EndColor.Y - StartColor.Y),
-                StartColor.Z + t * (EndColor.Z - StartColor.Z),
-                StartColor.W + t * (EndColor.W - StartColor.W),
-            )
-            
-            # Convert to SDL_Color
-            ColorSdl = interpolated_color.ToSdl2Color()
-            
-            # Draw a vertical line (1-pixel wide rect)
-            VerticalRect = sdl2.SDL_Rect(Pos.X + x, Pos.Y, 1, Size.Y)
-            sdl2.SDL_FillRect(self.Surface, VerticalRect, sdl2.SDL_MapRGBA(
-                self.Surface.contents.format,
-                ColorSdl.r, ColorSdl.g, ColorSdl.b, ColorSdl.a
-            ))
+    
     def LoadFont(self, Filepath: str, Size: int = 24, Bold: bool = False):
         """Load a TTF font into the UiManager."""
         Font = sdlttf.TTF_OpenFont(Filepath.encode('utf-8'), Size)
@@ -251,6 +240,8 @@ class UiManager:
             if self.Event.type == sdl2.SDL_QUIT:
                 self.Running = False
                 break
+        
+        sdl2.SDL_RenderPresent(self.Renderer)
         sdl2.SDL_Delay(10)
 
     def Quit(self):
