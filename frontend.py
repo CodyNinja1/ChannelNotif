@@ -17,9 +17,10 @@ def InitUi(UiMgr: UiManager, Log: Logger):
     UiMgr.CreateButton() # Back
 
 def MenuMain(UiMgr: UiManager, Setting: Settings):
-    UiMgr.Text("ChannelNotif", Nat2(40, 160), 0)
+    UiMgr.Text("ChannelNotif", Nat2(40, 40), 0)
 
-    ButtonRect = UiMgr.Button(f"Play ({Setting.Notifications.OnClick})", Nat2(50, 220), Setting.Notifications.PerformOnClick, 0, 1)
+    ButtonRect = UiMgr.Button(f"Play Trackmania (via {Setting.Notifications.OnClick})", Nat2(50, 220), Setting.Notifications.PerformOnClick, 0, 1)
+    ButtonRect = UiMgr.Button(f"Play Shootmania (via {Setting.Notifications.OnClick})", Nat2(50, 261), lambda: Setting.Notifications.PerformOnClick(True), 0, 1)
     SettingsButtonPos = Nat2(50, 220)
     SettingsButtonPos = Nat2(SettingsButtonPos.X + ButtonRect.WH.X, SettingsButtonPos.Y)
     UiMgr.Button("", SettingsButtonPos, lambda: UiMgr.ChangeActiveMenu("Settings"), 1, 2)
@@ -29,9 +30,11 @@ def MenuMain(UiMgr: UiManager, Setting: Settings):
 
 def MenuSettings(UiMgr: UiManager, Setting: Settings):
     UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 2, 2)
+    UiMgr.Text("Settings", Nat2(40, 40), 0)
 
 def MenuSchedule(UiMgr: UiManager, Setting: Settings):
     UiMgr.Button("", Nat2(818, 455), lambda: UiMgr.ChangeActiveMenu("Main"), 2, 2)
+    UiMgr.Text("Schedule", Nat2(40, 40), 0)
 
 def Launch():
     Log = Logger()

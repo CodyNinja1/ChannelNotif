@@ -159,7 +159,7 @@ class UiManager:
         return self.PointInsideRect(self.GetCursorPosition(), TRect.XY, TRect.WH)
 
     def ColorOnHover(self, TRect: Rect, Color1: Vec4, Color2: Vec4):
-        return Color1 if self.PointInsideRect(self.GetCursorPosition(), TRect.XY, TRect.WH) else Color2
+        return Color1 if self.RectIsHover(TRect) else Color2
 
     def PointInsideRect(self, Point: Nat2, RectPos: Nat2, RectSize: Nat2) -> bool:
         return RectPos.X <= Point.X <= RectPos.X + RectSize.X and RectPos.Y <= Point.Y <= RectPos.Y + RectSize.Y

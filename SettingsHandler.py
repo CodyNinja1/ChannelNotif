@@ -2,6 +2,8 @@ import json
 from typing import Literal
 from pathlib import Path
 from os import makedirs, system
+from subprocess import Popen
+from ManiaplanetAPI import GetChannelsByGameA
 
 class NotifSettings:
     def __init__(self):
@@ -31,13 +33,13 @@ class NotifSettings:
             if "game" in Data and Data["game"] in {"Lagoon", "Valley", "Storm", "Stadium", "Canyon"}:
                 self.Game = Data["game"]
             if "exe" in Data:
-                self.exe = Data["exe"]
+                self.Exe = Data["exe"]
             if "alerteverychannel" in Data and isinstance(Data["alerteverychannel"], bool):
                 self.AlertEveryChannel = Data["alerteverychannel"]
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
-    def PerformOnClick(self) -> bool:
+    def PerformOnClick(self, Shootmania: bool = False) -> bool:
         match self.OnClick:
             case "Steam":
                 system("explorer steam://rungameid/" + self.SteamAppIdTable[self.Game])
@@ -45,7 +47,8 @@ class NotifSettings:
             case "Frontend":
                 return True
             case "Exe":
-                system(self.Exe)
+                Popen(self.Exe + " /join=" + GetChannelsByGameA(Shootmania)[-1]["login"] + "@" + GetChannelsByGameA(Shootmania)[-1]["title"])
+                print("Running: " + self.Exe + " /join=" + GetChannelsByGameA(Shootmania)[-1]["login"] + "@" + GetChannelsByGameA(Shootmania)[-1]["title"])
             case "Nothing":
                 pass
         return False
