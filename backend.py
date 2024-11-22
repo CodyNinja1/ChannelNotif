@@ -9,9 +9,8 @@ tz = pytz.timezone(get_localzone_name())
 Hour = datetime.now(tz=tz).hour
 PHour = Hour
 
-Settings = GetSettings()
-
 while True:
+    Settings = GetSettings()
     Hour = datetime.now(tz=tz).hour
 
     if PHour != Hour:
