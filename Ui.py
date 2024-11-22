@@ -3,6 +3,9 @@ import sdl2
 import sdl2.ext as sdl2ext
 import sdl2.sdlttf as sdlttf
 import ctypes
+import requests
+from PIL import Image
+from io import BytesIO
 
 class Nat2:
     def __init__(self, X: int, Y: int):
@@ -47,11 +50,73 @@ class UiManager:
             sdl2.SDL_WINDOWPOS_CENTERED,
             848, 480, sdl2.SDL_WINDOW_SHOWN
         )
+        self.Renderer = sdl2.SDL_CreateRenderer(self.Window, -1, sdl2.SDL_RENDERER_ACCELERATED)
         self.Surface = sdl2.SDL_GetWindowSurface(self.Window)
         self.Event = sdl2.SDL_Event()
         self.Running: bool = True
         self.Fonts = []
         self.Buttons: list[bool] = []
+        self.ActiveMenu: Literal["Main", "Settings", "Schedule"] = "Main"
+
+    def LoadImageFromUrl(self, url: str):
+        """Download an image from the URL and load it into SDL2."""
+        # Step 1: Download the image from the URL
+        response = requests.get(url)
+        img_data = BytesIO(response.content)
+
+        # Step 2: Open the image with PIL
+        pil_image = Image.open(img_data)
+
+        # Step 3: Convert the PIL image to RGBA format (for transparency support)
+        pil_image = pil_image.convert("RGBA")  # Convert to RGBA format
+
+        # Step 4: Convert the image to raw bytes
+        img_data = pil_image.tobytes()
+
+        # Step 5: Create an SDL surface from the raw image data
+        width, height = pil_image.size
+        pitch = width * 4  # 4 bytes per pixel for RGBA
+
+        # Create a ctypes buffer from the raw image data
+        buffer = ctypes.create_string_buffer(img_data)
+
+        # Create an SDL surface from the buffer
+        surface = sdl2.SDL_CreateRGBSurfaceFrom(
+            buffer,
+            width,
+            height,
+            32,  # 32-bit per pixel (RGBA)
+            pitch,
+            0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000  # RGBA masks
+        )
+
+        if not surface:
+            raise Exception("Unable to create SDL surface from image data")
+
+        # Step 6: Create a texture from the surface
+        texture = sdl2.SDL_CreateTextureFromSurface(self.renderer, surface)
+
+        # Free the surface after creating the texture
+        sdl2.SDL_FreeSurface(surface)
+
+        return texture
+
+    def RenderTexture(self, texture, position: Nat2):
+        """Render the texture at the specified position."""
+        # Clear the renderer to avoid flickering
+        sdl2.SDL_RenderClear(self.renderer)
+
+        # Define the destination rectangle based on the Nat2 position
+        dest_rect = sdl2.SDL_Rect(position.x, position.y, 200, 200)  # Set size to 200x200 (or change it)
+        
+        # Copy the texture to the renderer at the given position
+        sdl2.SDL_RenderCopy(self.renderer, texture, None, ctypes.byref(dest_rect))
+        
+        # Present the rendered content to the screen (double-buffering)
+        sdl2.SDL_RenderPresent(self.renderer)
+
+    def ChangeActiveMenu(self, MenuName: str):
+        self.ActiveMenu = MenuName
 
     def GetMouseState(self):
         """Get the current cursor position and mouse button states."""
@@ -101,7 +166,7 @@ class UiManager:
 
     def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int, FontIdx: int = 0):
         TextRect: Rect = self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1), NoDraw=True)
-        ButtonRect: Rect = Rect(TextRect.XY + -20, TextRect.WH + 40)
+        ButtonRect: Rect = Rect(TextRect.XY + -10, TextRect.WH + 20)
 
         Color = self.ColorOnHover(ButtonRect, Vec4(0.4, 0.4, 0.4, 1), Vec4(0.2, 0.2, 0.2, 1))
 
@@ -114,7 +179,7 @@ class UiManager:
         else:
             self.Buttons[ButtonIdx] = False
 
-        self.Rect(Pos + -20, (TextRect.WH + 40), Color=Color)
+        self.Rect(Pos + -10, ButtonRect.WH, Color=Color)
         self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1))   
 
     def Rect(self, Pos: Nat2, Size: Nat2, Color: Vec4 = Vec4(1, 0, 1, 1)):

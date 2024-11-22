@@ -2,7 +2,6 @@ import json
 from typing import Literal
 from pathlib import Path
 from os import makedirs, system
-from Frontend import Launch
 
 class NotifSettings:
     def __init__(self):
@@ -38,17 +37,18 @@ class NotifSettings:
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
-    def PerformOnClick(self):
+    def PerformOnClick(self) -> bool:
         match self.OnClick:
             case "Steam":
                 system("explorer steam://rungameid/" + self.SteamAppIdTable[self.Game])
-                return
+                return False
             case "Frontend":
-                Launch()
+                return True
             case "Exe":
                 system(self.Exe)
             case "Nothing":
                 pass
+        return False
 
 class UpdateSettings:
     def __init__(self):
