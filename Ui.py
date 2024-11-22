@@ -99,8 +99,8 @@ class UiManager:
     def CreateButton(self):
         self.Buttons.append(False)
 
-    def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int):
-        TextRect: Rect = self.Text(Label, Pos, 0, Vec4(0.8, 0.8, 0.8, 1), NoDraw=True)
+    def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int, FontIdx: int = 0):
+        TextRect: Rect = self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1), NoDraw=True)
         ButtonRect: Rect = Rect(TextRect.XY + -20, TextRect.WH + 40)
 
         Color = self.ColorOnHover(ButtonRect, Vec4(0.4, 0.4, 0.4, 1), Vec4(0.2, 0.2, 0.2, 1))
@@ -115,7 +115,7 @@ class UiManager:
             self.Buttons[ButtonIdx] = False
 
         self.Rect(Pos + -20, (TextRect.WH + 40), Color=Color)
-        self.Text(Label, Pos, 0, Vec4(0.8, 0.8, 0.8, 1))   
+        self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1))   
 
     def Rect(self, Pos: Nat2, Size: Nat2, Color: Vec4 = Vec4(1, 0, 1, 1)):
         """Draw a rectangle on the surface."""
