@@ -47,8 +47,7 @@ class NotifSettings:
             case "Frontend":
                 return True
             case "Exe":
-                Popen(self.Exe + " /join=" + GetChannelsByGameA(Shootmania)[-1]["login"] + "@" + GetChannelsByGameA(Shootmania)[-1]["title"])
-                print("Running: " + self.Exe + " /join=" + GetChannelsByGameA(Shootmania)[-1]["login"] + "@" + GetChannelsByGameA(Shootmania)[-1]["title"])
+                Popen(self.Exe + " /join=" + GetChannelsByGameA(Shootmania)[0]["login"] + "@" + GetChannelsByGameA(Shootmania)[0]["title"])
             case "Nothing":
                 pass
         return False
@@ -272,28 +271,59 @@ class FavouriteSettings:
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
 
+class UiSettings:
+    def __init__(self):
+        self.IsDarkMode = True
+        self.ColorPalette = [
+            (0, 0.922, 0.451), 
+            (0, 0.78, 0.376), 
+            (0, 0.62, 0.298), 
+            (0, 0.459, 0.224), 
+            (0, 0.302, 0.149)
+        ]
+
+    def ToJson(self):
+        return json.dumps({
+            "IsDarkMode": self.IsDarkMode,
+            "ColorPalette": self.ColorPalette
+        })
+
+    def FromJson(self, JsonStr: str):
+        try:
+            data = json.loads(JsonStr)
+            if "IsDarkMode" in data and isinstance(data["IsDarkMode"], bool):
+                self.IsDarkMode = data["IsDarkMode"]
+            if "ColorPalette" in data and isinstance(data["ColorPalette"], list):
+                self.ColorPalette = [tuple(color) for color in data["ColorPalette"]]
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"Error decoding JSON: {e}")
+
 class Settings:
     def __init__(self):
         self.Notifications = NotifSettings()
         self.Updates = UpdateSettings()
         self.Favourites = FavouriteSettings()
+        self.Ui = UiSettings()
 
     def ToJson(self):
         return json.dumps({
-            "notifications": json.loads(self.Notifications.ToJson()),
-            "updates": json.loads(self.Updates.ToJson()),
-            "favourites": json.loads(self.Favourites.ToJson())
+            "Notifications": json.loads(self.Notifications.ToJson()),
+            "Updates": json.loads(self.Updates.ToJson()),
+            "Favourites": json.loads(self.Favourites.ToJson()),
+            "Ui": json.loads(self.Ui.ToJson())
         }, indent=4)
 
     def FromJson(self, JsonStr: str):
         try:
             data = json.loads(JsonStr)
-            if "notifications" in data and isinstance(data["notifications"], dict):
-                self.Notifications.FromJson(json.dumps(data["notifications"]))
-            if "updates" in data and isinstance(data["updates"], dict):
-                self.Updates.FromJson(json.dumps(data["updates"]))
-            if "favourites" in data and isinstance(data["favourites"], dict):
-                self.Favourites.FromJson(json.dumps(data["favourites"]))
+            if "Notifications" in data and isinstance(data["Notifications"], dict):
+                self.Notifications.FromJson(json.dumps(data["Notifications"]))
+            if "Updates" in data and isinstance(data["Updates"], dict):
+                self.Updates.FromJson(json.dumps(data["Updates"]))
+            if "Favourites" in data and isinstance(data["Favourites"], dict):
+                self.Favourites.FromJson(json.dumps(data["Favourites"]))
+            if "Ui" in data and isinstance(data["Ui"], dict):
+                self.Ui.FromJson(json.dumps(data["Ui"]))
         except (json.JSONDecodeError, TypeError) as e:
             print(f"Error decoding JSON: {e}")
     

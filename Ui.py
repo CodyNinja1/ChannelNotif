@@ -3,9 +3,7 @@ import sdl2
 import sdl2.ext as sdl2ext
 import sdl2.sdlttf as sdlttf
 import ctypes
-import requests
-from PIL import Image
-from io import BytesIO
+from SettingsHandler import GetSettings
 
 class Nat2:
     def __init__(self, X: int, Y: int):
@@ -32,7 +30,7 @@ class Rect:
         self.WH = WH
 
 class Vec4:
-    def __init__(self, X: float, Y: float, Z: float, W: float):
+    def __init__(self, X: float, Y: float, Z: float, W: float = 1):
         self.X = X
         self.Y = Y
         self.Z = Z
@@ -40,6 +38,12 @@ class Vec4:
 
     def ToSdl2Color(self):
         return sdl2ext.Color(int(self.X * 255), int(self.Y * 255), int(self.Z * 255), int(self.W * 255))
+
+def TupleToVec4(t: tuple[int, int, int]) -> Vec4:
+    return Vec4(t[0], t[1], t[2])
+
+def ColorPaletteToVec4(l: list[tuple]) -> list[Vec4]:
+    return list([TupleToVec4(tup) for tup in l])
 
 class UiManager:
     def __init__(self):
@@ -71,7 +75,19 @@ class UiManager:
         self.Textures: list = []  # List to store textures
         self.CheckboxStates: dict = {}
 
-    def RectBorder(self, Pos: Nat2, Size: Nat2, Color: Vec4 = Vec4(0.8, 0.8, 0.8, 1), Thickness: int = 1):
+        self.ColorPalette: list[Vec4] = ColorPaletteToVec4(GetSettings().Ui.ColorPalette)
+        self.IsDarkMode: bool = GetSettings().Ui.IsDarkMode
+
+    def GetModeIcon(self):
+        return "" if not self.IsDarkMode else ""
+
+    def SwitchMode(self):
+        self.IsDarkMode = not self.IsDarkMode
+
+    def ColorPaletteMode(self) -> list[Vec4]:
+        return self.ColorPalette[::-1] if self.IsDarkMode else self.ColorPalette
+
+    def RectBorder(self, Pos: Nat2, Size: Nat2, ColorIdx: int, Thickness: int = 1):
         """
         Draws a border for a rectangle at a specified position and size using `self.Rect`.
 
@@ -82,15 +98,17 @@ class UiManager:
             Thickness (int): Thickness of the border lines.
         """
         # Top border
-        self.Rect(Pos, Nat2(Size.X, Thickness), Color)
+        self.Rect(Pos, Nat2(Size.X, Thickness), ColorIdx)
         # Left border
-        self.Rect(Pos, Nat2(Thickness, Size.Y), Color)
+        self.Rect(Pos, Nat2(Thickness, Size.Y), ColorIdx)
         # Bottom border
-        self.Rect(Nat2(Pos.X, Pos.Y + Size.Y - Thickness), Nat2(Size.X, Thickness), Color)
+        self.Rect(Nat2(Pos.X, Pos.Y + Size.Y - Thickness), Nat2(Size.X, Thickness), ColorIdx)
         # Right border
-        self.Rect(Nat2(Pos.X + Size.X - Thickness, Pos.Y), Nat2(Thickness, Size.Y), Color)
+        self.Rect(Nat2(Pos.X + Size.X - Thickness, Pos.Y), Nat2(Thickness, Size.Y), ColorIdx)
 
-    def Checkbox(self, Label: str, Pos: Nat2, ColorBorder: Vec4, ColorInner: Vec4) -> bool:
+    def Checkbox(self, Label: str, Pos: Nat2, ColorBorderIdx: int, ColorInnerIdx: int, ColorInnerHoverIdx: int, ColorTextIdx: int) -> bool:
+        ColorBorder = ColorBorderIdx
+        ColorInner = ColorInnerIdx
         """
         Render a checkbox UI component and toggle its state when clicked.
 
@@ -110,7 +128,7 @@ class UiManager:
         CheckboxRect = Rect(Pos, CheckboxSize)
 
         # Draw the checkbox border
-        self.RectBorder(Pos, CheckboxSize, Color=ColorBorder, Thickness=2)
+        self.RectBorder(Pos, CheckboxSize, ColorIdx=ColorBorder, Thickness=2)
 
         # Initialize the checkbox states and mouse state tracker if not already
         if not hasattr(self, "CheckboxStates"):
@@ -121,9 +139,9 @@ class UiManager:
         # Handle mouse hover and click for toggling the state
         if self.RectIsHover(CheckboxRect):
             if not self.CheckboxStates[Label]["checked"]:
-                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), Color=Vec4(0.4, 0.4, 0.4, 1))
+                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorIdx=ColorInnerHoverIdx)
             if self.CheckboxStates[Label]["checked"]:
-                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), Color=ColorInner)
+                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorIdx=ColorInner)
             if self.IsClick("Left"):
                 # Only toggle state when the mouse button transitions from "up" to "down"
                 if not self.CheckboxStates[Label]["mouse_down"]:
@@ -135,11 +153,11 @@ class UiManager:
 
         # Draw the filled rectangle if checked
         if self.CheckboxStates[Label]["checked"]:
-            self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), Color=ColorInner)
+            self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorIdx=ColorInner)
 
         # Render the label
         LabelPos = Pos + Nat2(CheckboxSize.X + 10, 0)
-        self.Text(Label, LabelPos, FontIdx=1, Color=Vec4(0.8, 0.8, 0.8, 1))
+        self.Text(Label, LabelPos, FontIdx=1, ColorIdx=ColorTextIdx)
 
         return self.CheckboxStates[Label]["checked"]
 
@@ -172,8 +190,8 @@ class UiManager:
     def RectIsHover(self, TRect: Rect):
         return self.PointInsideRect(self.GetCursorPosition(), TRect.XY, TRect.WH)
 
-    def ColorOnHover(self, TRect: Rect, Color1: Vec4, Color2: Vec4):
-        return Color1 if self.RectIsHover(TRect) else Color2
+    def ColorOnHover(self, TRect: Rect, Color1Idx: int, Color2Idx: int):
+        return Color1Idx if self.RectIsHover(TRect) else Color2Idx
 
     def PointInsideRect(self, Point: Nat2, RectPos: Nat2, RectSize: Nat2) -> bool:
         return RectPos.X <= Point.X <= RectPos.X + RectSize.X and RectPos.Y <= Point.Y <= RectPos.Y + RectSize.Y
@@ -192,11 +210,11 @@ class UiManager:
     def CreateButton(self):
         self.Buttons.append([False, False])
 
-    def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int, FontIdx: int = 0):
-        TextRect: Rect = self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1), NoDraw=True)
+    def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int, ColorTextIdx: int, ColorHoverIdx: int, ColorNormalIdx: int, FontIdx: int = 0):
+        TextRect: Rect = self.Text(Label, Pos, FontIdx, ColorTextIdx, NoDraw=True)
         ButtonRect: Rect = Rect(TextRect.XY + -10, TextRect.WH + 20)
 
-        Color = self.ColorOnHover(ButtonRect, Vec4(0.4, 0.4, 0.4, 1), Vec4(0.2, 0.2, 0.2, 1))
+        Color = self.ColorOnHover(ButtonRect, ColorHoverIdx, ColorNormalIdx)
 
         if self.RectIsHover(ButtonRect):
             self.Buttons[ButtonIdx][1] = True
@@ -209,13 +227,14 @@ class UiManager:
             self.Buttons[ButtonIdx][0] = False
             self.Buttons[ButtonIdx][1] = False
 
-        self.Rect(Pos + -10, ButtonRect.WH, Color=Color)
-        self.Text(Label, Pos, FontIdx, Vec4(0.8, 0.8, 0.8, 1))  
+        self.Rect(Pos + -10, ButtonRect.WH, ColorIdx=Color)
+        self.Text(Label, Pos, FontIdx, ColorTextIdx)  
 
         return Rect(Pos + -10, ButtonRect.WH) 
 
-    def Rect(self, Pos: Nat2, Size: Nat2, Color: Vec4 = Vec4(1, 0, 1, 1)):
+    def Rect(self, Pos: Nat2, Size: Nat2, ColorIdx: int):
         """Draw a rectangle on the surface."""
+        Color = self.ColorPaletteMode()[ColorIdx]
         ColorSdl = Color.ToSdl2Color()
         RectSdl = sdl2.SDL_Rect(Pos.X, Pos.Y, Size.X, Size.Y)
         sdl2.SDL_FillRect(self.Surface, RectSdl, sdl2.SDL_MapRGBA(self.Surface.contents.format,
@@ -230,8 +249,9 @@ class UiManager:
         if not Font:
             raise RuntimeError(f"Failed to load font from {Filepath}: {sdl2.SDL_GetError().decode('utf-8')}")
 
-    def Text(self, Str: str, Pos: Nat2, FontIdx: int, Color: Vec4 = Vec4(0.8, 0.8, 0.8, 1), NoDraw: bool = False) -> Rect:
+    def Text(self, Str: str, Pos: Nat2, FontIdx: int, ColorIdx: int, NoDraw: bool = False) -> Rect:
         """Render text on the surface."""
+        Color = self.ColorPaletteMode()[ColorIdx]
         if len(self.Fonts) == 0:
             raise RuntimeError("No font loaded. Use LoadFont() before rendering text.")
         
@@ -254,12 +274,12 @@ class UiManager:
         sdl2.SDL_FreeSurface(TextSurface)
         return RRect
 
-    def TextWrapped(self, Str: str, Pos: Nat2, FontIdx: int, Color: Vec4 = Vec4(0.8, 0.8, 0.8, 1)):
+    def TextWrapped(self, Str: str, Pos: Nat2, FontIdx: int, ColorIdx: int):
         Strings = Str.split("\n")
         for Idx, String in enumerate(Strings):
             if String == "":
                 continue
-            self.Text(String, Pos + Nat2(0, Idx * 16), FontIdx=FontIdx, Color=Color)
+            self.Text(String, Pos + Nat2(0, Idx * 16), FontIdx=FontIdx, ColorIdx=ColorIdx)
 
     def MainLoop(self):
         """Render each frame."""
@@ -270,7 +290,7 @@ class UiManager:
         
         sdl2.SDL_RenderPresent(self.Renderer)
         self.Update()
-        sdl2.SDL_Delay(10)
+        sdl2.SDL_Delay(1)
 
     def Quit(self):
         """Clean up resources."""

@@ -13,15 +13,6 @@ def InitUi(UiMgr: UiManager, Log: Logger):
     UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 11)
     Log.Log("[FRONTEND] Fonts loaded")
 
-    # Main Menu
-    UiMgr.CreateButton() # PlayTM
-    UiMgr.CreateButton() # PlaySM
-    UiMgr.CreateButton() # Settings
-
-    # Settings
-    UiMgr.CreateButton() # Back
-
-    # Schedule
     UiMgr.CreateButton()
 
 def SetTooltip(String: str):
@@ -33,7 +24,11 @@ def SetTooltip(String: str):
 
 def MenuMain(UiMgr: UiManager, Setting: Settings):
     global ChannelTM, ChannelSM
-    pass
+    SetTooltip("Tooltip test")  
+
+    ButtonRect = UiMgr.Button(UiMgr.GetModeIcon(), Nat2(100, 100), UiMgr.SwitchMode, 0, 2, 1, 3, FontIdx=1)
+    
+    UiMgr.Checkbox("Test", Nat2(100, 100 + ButtonRect.WH.Y), 0, 1, 2, 0)
 
 def MenuSettings(UiMgr: UiManager, Setting: Settings):
     pass
@@ -43,7 +38,7 @@ def MenuSchedule(UiMgr: UiManager, Setting: Settings):
 
 def RenderTooltip(UiMgr: UiManager):
     global Tooltip
-    UiMgr.TextWrapped(Tooltip, Nat2(360, 160), 1)
+    UiMgr.TextWrapped(Tooltip, Nat2(360, 160), 1, 0)
 
 def Launch():
     global Tooltip
@@ -64,7 +59,7 @@ def Launch():
 
     while UiMgr.Running:
         sdl2.SDL_RenderClear(UiMgr.Renderer)
-        UiMgr.Rect(Nat2(0, 0), Nat2(848, 480), Color=Vec4(0, 0, 0, 1))
+        UiMgr.Rect(Nat2(0, 0), Nat2(848, 480), ColorIdx=-1)
 
         match UiMgr.ActiveMenu:
             case "Main":
