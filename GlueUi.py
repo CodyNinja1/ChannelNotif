@@ -81,6 +81,9 @@ class UiManager:
         self.ColorPalette: list[Vec4] = ColorPaletteToVec4(GetSettings().Ui.ColorPalette)
         self.IsDarkMode: bool = GetSettings().Ui.IsDarkMode
 
+    def Begin(self):
+        sdl2.SDL_RenderClear(self.Renderer)
+
     def Button(self, Label: str, Pos: Nat2, FontName: str, OnClick: callable, 
            ColorTextIdx: int = 2, ColorHoverIdx: int = 1, ColorNormalIdx: int = 3, 
            ) -> tuple[Rect, bool, bool]:
@@ -318,7 +321,7 @@ class UiManager:
                 continue
             self.Text(String, Pos + Nat2(0, Idx * 16), FontName, ColorIdx=ColorIdx)
 
-    def MainLoop(self):
+    def End(self):
         """Render each frame."""
         while sdl2.SDL_PollEvent(ctypes.byref(self.Event)) != 0:
             if self.Event.type == sdl2.SDL_QUIT:

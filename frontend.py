@@ -1,5 +1,5 @@
 from Log import Logger
-from Ui import *
+from GlueUi import *
 from ManiaplanetAPI import GetChannelA, DictToChannel, Channel
 from SettingsHandler import GetSettings, Settings
 
@@ -73,7 +73,8 @@ def Launch():
     Log.Log(f"[FRONTEND] ChannelNotif {Setting.Updates.Version}")
 
     while UiMgr.Running:
-        sdl2.SDL_RenderClear(UiMgr.Renderer)
+        UiMgr.Begin()
+        
         UiMgr.Rect(Nat2(0, 0), Nat2(848, 480), ColorIdx=-1)
 
         match UiMgr.ActiveMenu:
@@ -85,7 +86,7 @@ def Launch():
                 MenuSchedule(UiMgr, Setting)
         RenderTooltip(UiMgr)
 
-        UiMgr.MainLoop()
+        UiMgr.End()
     
     Log.Log("[FRONTEND] Exiting")
     UiMgr.Quit()
