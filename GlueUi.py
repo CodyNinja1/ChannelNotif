@@ -45,7 +45,7 @@ def TupleToVec4(t: tuple[int, int, int]) -> Vec4:
 def ColorPaletteToVec4(l: list[tuple]) -> list[Vec4]:
     return list([TupleToVec4(tup) for tup in l])
 
-class UiManager:
+class GlueUiManager:
     def __init__(self):
         # Initialize SDL and TTF
         sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
