@@ -143,7 +143,7 @@ class UiManager:
         self.IsDarkMode = not self.IsDarkMode
 
     def ColorPaletteMode(self) -> list[Vec4]:
-        return self.ColorPalette[::-1] if self.IsDarkMode else self.ColorPalette
+        return self.ColorPalette[::-1] if not self.IsDarkMode else self.ColorPalette
 
     def RectBorder(self, Pos: Nat2, Size: Nat2, ColorIdx: int, Thickness: int = 1):
         """
