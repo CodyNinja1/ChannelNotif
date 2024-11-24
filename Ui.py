@@ -104,7 +104,7 @@ class UiManager:
         """
         # Initialize button state if not already present
         if Label not in self.Buttons:
-            self.Buttons[Label] = {"active": False, "mouse_down": False, "prev_mouse_down": False}
+            self.Buttons[Label] = {"active": True, "mouse_down": True, "prev_mouse_down": True} # HACK
 
         # Calculate button rectangle
         TextRect: Rect = self.Text(Label, Pos, FontName, ColorTextIdx, NoDraw=True)
