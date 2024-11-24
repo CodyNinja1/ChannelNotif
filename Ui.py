@@ -66,7 +66,7 @@ class UiManager:
         
         self.Event = sdl2.SDL_Event()
         self.Running: bool = True
-        self.Fonts = []
+        self.Fonts: dict[str, any] = {}
         self.ActiveMenu: Literal["Main", "Settings", "Schedule"] = "Main"
         
         # Initialize the list to store images and textures
@@ -81,9 +81,9 @@ class UiManager:
         self.ColorPalette: list[Vec4] = ColorPaletteToVec4(GetSettings().Ui.ColorPalette)
         self.IsDarkMode: bool = GetSettings().Ui.IsDarkMode
 
-    def Button(self, Label: str, Pos: Nat2, OnClick: callable, 
+    def Button(self, Label: str, Pos: Nat2, FontName: str, OnClick: callable, 
            ColorTextIdx: int = 2, ColorHoverIdx: int = 1, ColorNormalIdx: int = 3, 
-           FontIdx: int = 0) -> tuple[Rect, bool, bool]:
+           ) -> tuple[Rect, bool, bool]:
         """
         Creates and renders a button UI element.
 
@@ -107,7 +107,7 @@ class UiManager:
             self.Buttons[Label] = {"active": False, "mouse_down": False, "prev_mouse_down": False}
 
         # Calculate button rectangle
-        TextRect: Rect = self.Text(Label, Pos, FontIdx, ColorTextIdx, NoDraw=True)
+        TextRect: Rect = self.Text(Label, Pos, FontName, ColorTextIdx, NoDraw=True)
         ButtonRect: Rect = Rect(TextRect.XY + -10, TextRect.WH + 20)
 
         clicked = False  # Tracks whether the button was clicked in this frame
@@ -128,7 +128,7 @@ class UiManager:
 
         # Render the button
         self.Rect(ButtonRect.XY, ButtonRect.WH, ColorIdx)
-        self.Text(Label, Pos, FontIdx, ColorTextIdx)
+        self.Text(Label, Pos, FontName, ColorTextIdx)
 
         # Update button state
         self.Buttons[Label]["prev_mouse_down"] = mouse_down
@@ -164,7 +164,7 @@ class UiManager:
         # Right border
         self.Rect(Nat2(Pos.X + Size.X - Thickness, Pos.Y), Nat2(Thickness, Size.Y), ColorIdx)
 
-    def Checkbox(self, Label: str, Pos: Nat2, 
+    def Checkbox(self, Label: str, Pos: Nat2, FontName: str, 
              ColorBorderIdx: int = 0, ColorInnerIdx: int = 1, 
              ColorInnerHoverIdx: int = 2, ColorTextIdx: int = 0) -> tuple[bool, bool]:
         """
@@ -215,7 +215,7 @@ class UiManager:
 
         # Render the label
         LabelPos = Pos + Nat2(CheckboxSize.X + 10, 0)
-        self.Text(Label, LabelPos, FontIdx=1, ColorIdx=ColorTextIdx)
+        self.Text(Label, LabelPos, FontName, ColorIdx=ColorTextIdx)
 
         # Return the checkbox's checked state and hovered state
         return self.CheckboxStates[Label]["checked"], hovered
@@ -277,16 +277,16 @@ class UiManager:
         sdl2.SDL_FillRect(self.Surface, RectSdl, sdl2.SDL_MapRGBA(self.Surface.contents.format,
                                                                   ColorSdl.r, ColorSdl.g, ColorSdl.b, ColorSdl.a))
     
-    def LoadFont(self, Filepath: str, Size: int = 24, Bold: bool = False):
+    def LoadFont(self, Filepath: str, Name: str, Size: int = 24, Bold: bool = False):
         """Load a TTF font into the UiManager."""
         Font = sdlttf.TTF_OpenFont(Filepath.encode('utf-8'), Size)
         if Bold:
             sdl2.sdlttf.TTF_SetFontStyle(Font, sdl2.sdlttf.TTF_STYLE_BOLD)
-        self.Fonts.append(Font)
+        self.Fonts[Name] = Font
         if not Font:
             raise RuntimeError(f"Failed to load font from {Filepath}: {sdl2.SDL_GetError().decode('utf-8')}")
 
-    def Text(self, Str: str, Pos: Nat2, FontIdx: int, ColorIdx: int, NoDraw: bool = False) -> Rect:
+    def Text(self, Str: str, Pos: Nat2, FontName: str, ColorIdx: int = 2, NoDraw: bool = False) -> Rect:
         """Render text on the surface."""
         Color = self.ColorPaletteMode()[ColorIdx]
         if len(self.Fonts) == 0:
@@ -296,7 +296,7 @@ class UiManager:
         ColorSdl = sdl2.SDL_Color(int(Color.X * 255), int(Color.Y * 255), int(Color.Z * 255), int(Color.W * 255))
         
         # Render the text to an SDL surface
-        TextSurface = sdlttf.TTF_RenderUTF8_Blended(self.Fonts[FontIdx], Str.encode('utf-8'), ColorSdl)
+        TextSurface = sdlttf.TTF_RenderUTF8_Blended(self.Fonts[FontName], Str.encode('utf-8'), ColorSdl)
         if not TextSurface:
             raise RuntimeError(f"Failed to render text: {sdl2.SDL_GetError().decode('utf-8')}")
         
@@ -311,12 +311,12 @@ class UiManager:
         sdl2.SDL_FreeSurface(TextSurface)
         return RRect
 
-    def TextWrapped(self, Str: str, Pos: Nat2, FontIdx: int, ColorIdx: int):
+    def TextWrapped(self, Str: str, Pos: Nat2, FontName: str, ColorIdx: int):
         Strings = Str.split("\n")
         for Idx, String in enumerate(Strings):
             if String == "":
                 continue
-            self.Text(String, Pos + Nat2(0, Idx * 16), FontIdx=FontIdx, ColorIdx=ColorIdx)
+            self.Text(String, Pos + Nat2(0, Idx * 16), FontName, ColorIdx=ColorIdx)
 
     def MainLoop(self):
         """Render each frame."""
@@ -332,7 +332,7 @@ class UiManager:
     def Quit(self):
         """Clean up resources."""
         for Font in self.Fonts:
-            sdlttf.TTF_CloseFont(Font)
+            sdlttf.TTF_CloseFont(self.Fonts[Font])
         sdl2.SDL_DestroyWindow(self.Window)
         sdl2.SDL_Quit()
         sdlttf.TTF_Quit()

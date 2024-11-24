@@ -7,11 +7,19 @@ Tooltip = ""
 ChannelTM = Channel("", -1, "")
 ChannelSM = Channel("", -1, "")
 
+# MARK: InitUi
+
 def InitUi(UiMgr: UiManager, Log: Logger):
-    UiMgr.LoadFont("Fonts/GeistMonoLight.ttf", 32)
-    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 16)
-    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 11)
+    UiMgr.LoadFont("Fonts/GeistMonoLight.ttf", "Large", 32)
+    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", "Medium", 16)
+    UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", "SmallIcons", 11)
     Log.Log("[FRONTEND] Fonts loaded")
+
+# MARK: Tooltip
+
+def RenderTooltip(UiMgr: UiManager):
+    global Tooltip
+    UiMgr.TextWrapped(Tooltip, Nat2(600, 10), "Medium", 0)
 
 def SetTooltip(String: str):
     global Tooltip
@@ -20,26 +28,32 @@ def SetTooltip(String: str):
     else:
         Tooltip = f"Description:\n\n{String}"
 
+# MARK: MenuMain
+
 def MenuMain(UiMgr: UiManager, Setting: Settings):
     global ChannelTM, ChannelSM
     SetTooltip("Tooltip. Hover over an\nelement to view its\ndescription.")  
 
-    ButtonRect, Clicked, ButtonHovered = UiMgr.Button(UiMgr.GetModeIcon(), Nat2(100, 100), UiMgr.SwitchMode, FontIdx=1)
+    UiMgr.Text("Hello, world!", Nat2(10, 10), "Large")
+
+    ButtonRect, Clicked, ButtonHovered = UiMgr.Button(UiMgr.GetModeIcon(), Nat2(100, 100), "Medium", UiMgr.SwitchMode)
     if ButtonHovered:
         SetTooltip("Dark/light mode switch.")
-    Checked, CheckboxHovered = UiMgr.Checkbox("Testing", Nat2(100, 160))
+    Checked, CheckboxHovered = UiMgr.Checkbox("Testing", Nat2(100, 160), "Medium")
     if CheckboxHovered:
         SetTooltip(f"Checkbox.\nIt is{"n't" if not Checked else ""} checked.")
+
+# MARK: MenuSettings
 
 def MenuSettings(UiMgr: UiManager, Setting: Settings):
     pass
 
+# MARK: MenuSchedule
+
 def MenuSchedule(UiMgr: UiManager, Setting: Settings):
     pass
 
-def RenderTooltip(UiMgr: UiManager):
-    global Tooltip
-    UiMgr.TextWrapped(Tooltip, Nat2(600, 10), 1, 0)
+# MARK: MainLoop
 
 def Launch():
     global Tooltip
