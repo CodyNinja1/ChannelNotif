@@ -13,8 +13,6 @@ def InitUi(UiMgr: UiManager, Log: Logger):
     UiMgr.LoadFont("Fonts/GeistMonoExtraLightManiaIcons.ttf", 11)
     Log.Log("[FRONTEND] Fonts loaded")
 
-    UiMgr.CreateButton()
-
 def SetTooltip(String: str):
     global Tooltip
     if String == "":
@@ -24,11 +22,14 @@ def SetTooltip(String: str):
 
 def MenuMain(UiMgr: UiManager, Setting: Settings):
     global ChannelTM, ChannelSM
-    SetTooltip("Tooltip test")  
+    SetTooltip("Tooltip. Hover over an\nelement to view its\ndescription.")  
 
-    ButtonRect = UiMgr.Button(UiMgr.GetModeIcon(), Nat2(100, 100), UiMgr.SwitchMode, 0, 2, 1, 3, FontIdx=1)
-    
-    UiMgr.Checkbox("Test", Nat2(100, 100 + ButtonRect.WH.Y), 0, 1, 2, 0)
+    ButtonRect, Clicked, ButtonHovered = UiMgr.Button(UiMgr.GetModeIcon(), Nat2(100, 100), UiMgr.SwitchMode, FontIdx=1)
+    if ButtonHovered:
+        SetTooltip("Dark/light mode switch.")
+    Checked, CheckboxHovered = UiMgr.Checkbox("Testing", Nat2(100, 160))
+    if CheckboxHovered:
+        SetTooltip(f"Checkbox.\nIt is{"n't" if not Checked else ""} checked.")
 
 def MenuSettings(UiMgr: UiManager, Setting: Settings):
     pass
@@ -38,7 +39,7 @@ def MenuSchedule(UiMgr: UiManager, Setting: Settings):
 
 def RenderTooltip(UiMgr: UiManager):
     global Tooltip
-    UiMgr.TextWrapped(Tooltip, Nat2(360, 160), 1, 0)
+    UiMgr.TextWrapped(Tooltip, Nat2(600, 10), 1, 0)
 
 def Launch():
     global Tooltip

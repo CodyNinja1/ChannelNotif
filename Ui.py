@@ -67,16 +67,74 @@ class UiManager:
         self.Event = sdl2.SDL_Event()
         self.Running: bool = True
         self.Fonts = []
-        self.Buttons: list[bool] = []
         self.ActiveMenu: Literal["Main", "Settings", "Schedule"] = "Main"
         
         # Initialize the list to store images and textures
         self.Images: list = []  # List to store surfaces
         self.Textures: list = []  # List to store textures
-        self.CheckboxStates: dict = {}
 
+        # Checkbox and button states
+        self.CheckboxStates: dict = {}
+        self.Buttons: dict[str, dict] = {}  # Dictionary to store states of all buttons
+
+        # Color palette and UI mode
         self.ColorPalette: list[Vec4] = ColorPaletteToVec4(GetSettings().Ui.ColorPalette)
         self.IsDarkMode: bool = GetSettings().Ui.IsDarkMode
+
+    def Button(self, Label: str, Pos: Nat2, OnClick: callable, 
+           ColorTextIdx: int = 2, ColorHoverIdx: int = 1, ColorNormalIdx: int = 3, 
+           FontIdx: int = 0) -> tuple[Rect, bool, bool]:
+        """
+        Creates and renders a button UI element.
+
+        Parameters:
+            Label (str): The text displayed on the button. This also serves as its identifier.
+            Pos (Nat2): The position (top-left corner) of the button in the window.
+            OnClick (callable): The function to call when the button is clicked.
+            ColorTextIdx (int): The color palette index for the button text.
+            ColorHoverIdx (int): The color palette index for the button background when hovered.
+            ColorNormalIdx (int): The color palette index for the button background in its normal state.
+            FontIdx (int, optional): The index of the font to use for rendering the label. Defaults to 0.
+
+        Returns:
+            tuple[Rect, bool, bool]: 
+                - `Rect`: The rectangle defining the button's position and size.
+                - `bool`: Whether the button was clicked in the current frame.
+                - `bool`: Whether the button is currently being hovered.
+        """
+        # Initialize button state if not already present
+        if Label not in self.Buttons:
+            self.Buttons[Label] = {"active": False, "mouse_down": False, "prev_mouse_down": False}
+
+        # Calculate button rectangle
+        TextRect: Rect = self.Text(Label, Pos, FontIdx, ColorTextIdx, NoDraw=True)
+        ButtonRect: Rect = Rect(TextRect.XY + -10, TextRect.WH + 20)
+
+        clicked = False  # Tracks whether the button was clicked in this frame
+        hovered = self.RectIsHover(ButtonRect)  # Tracks whether the button is hovered
+
+        # Get the current mouse state (pressed or released)
+        mouse_down = self.IsClick("Left")
+
+        # Check if mouse is hovering and clicked
+        if hovered:
+            ColorIdx = ColorHoverIdx
+            # We register a click only when the mouse goes from "not pressed" to "pressed"
+            if mouse_down and not self.Buttons[Label]["prev_mouse_down"]:
+                OnClick()  # Call the click handler
+                clicked = True  # Mark the button as clicked
+        else:
+            ColorIdx = ColorNormalIdx
+
+        # Render the button
+        self.Rect(ButtonRect.XY, ButtonRect.WH, ColorIdx)
+        self.Text(Label, Pos, FontIdx, ColorTextIdx)
+
+        # Update button state
+        self.Buttons[Label]["prev_mouse_down"] = mouse_down
+
+        # Return the button's rectangle, clicked state, and hovered state
+        return ButtonRect, clicked, hovered
 
     def GetModeIcon(self):
         return "" if not self.IsDarkMode else ""
@@ -106,60 +164,61 @@ class UiManager:
         # Right border
         self.Rect(Nat2(Pos.X + Size.X - Thickness, Pos.Y), Nat2(Thickness, Size.Y), ColorIdx)
 
-    def Checkbox(self, Label: str, Pos: Nat2, ColorBorderIdx: int, ColorInnerIdx: int, ColorInnerHoverIdx: int, ColorTextIdx: int) -> bool:
-        ColorBorder = ColorBorderIdx
-        ColorInner = ColorInnerIdx
+    def Checkbox(self, Label: str, Pos: Nat2, 
+             ColorBorderIdx: int = 0, ColorInnerIdx: int = 1, 
+             ColorInnerHoverIdx: int = 2, ColorTextIdx: int = 0) -> tuple[bool, bool]:
         """
         Render a checkbox UI component and toggle its state when clicked.
 
         Parameters:
             Label (str): The label to display next to the checkbox.
             Pos (Nat2): The position of the checkbox (top-left corner of the checkbox).
-            ColorBorder (Vec4): The color of the checkbox border.
-            ColorInner (Vec4): The color of the checkbox when checked.
+            ColorBorderIdx (int): The color palette index for the checkbox border.
+            ColorInnerIdx (int): The color palette index for the checkbox fill when checked.
+            ColorInnerHoverIdx (int): The color palette index for the checkbox fill when hovered.
+            ColorTextIdx (int): The color palette index for the checkbox text.
 
         Returns:
-            bool: The current state of the checkbox (True for checked, False for unchecked).
+            tuple[bool, bool]: 
+                - `bool`: The current state of the checkbox (True for checked, False for unchecked).
+                - `bool`: Whether the checkbox is currently being hovered.
         """
         # Define the checkbox size
         CheckboxSize = Nat2(20, 20)
-
-        # Define the checkbox rectangle
         CheckboxRect = Rect(Pos, CheckboxSize)
 
-        # Draw the checkbox border
-        self.RectBorder(Pos, CheckboxSize, ColorIdx=ColorBorder, Thickness=2)
-
-        # Initialize the checkbox states and mouse state tracker if not already
-        if not hasattr(self, "CheckboxStates"):
-            self.CheckboxStates = {}
+        # Initialize checkbox state if not already present
         if Label not in self.CheckboxStates:
             self.CheckboxStates[Label] = {"checked": False, "mouse_down": False}
 
+        hovered = self.RectIsHover(CheckboxRect)  # Tracks whether the checkbox is hovered
+
         # Handle mouse hover and click for toggling the state
-        if self.RectIsHover(CheckboxRect):
+        if hovered:
             if not self.CheckboxStates[Label]["checked"]:
-                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorIdx=ColorInnerHoverIdx)
-            if self.CheckboxStates[Label]["checked"]:
-                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorIdx=ColorInner)
+                self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorInnerHoverIdx)
             if self.IsClick("Left"):
-                # Only toggle state when the mouse button transitions from "up" to "down"
                 if not self.CheckboxStates[Label]["mouse_down"]:
                     self.CheckboxStates[Label]["checked"] = not self.CheckboxStates[Label]["checked"]
                     self.CheckboxStates[Label]["mouse_down"] = True
             else:
-                # Reset the "mouse_down" state when the button is released
                 self.CheckboxStates[Label]["mouse_down"] = False
+        else:
+            self.CheckboxStates[Label]["mouse_down"] = False
 
         # Draw the filled rectangle if checked
         if self.CheckboxStates[Label]["checked"]:
-            self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorIdx=ColorInner)
+            self.Rect(Pos + Nat2(4, 4), Nat2(CheckboxSize.X - 8, CheckboxSize.Y - 8), ColorInnerIdx)
+
+        # Draw the checkbox border
+        self.RectBorder(Pos, CheckboxSize, ColorBorderIdx, Thickness=2)
 
         # Render the label
         LabelPos = Pos + Nat2(CheckboxSize.X + 10, 0)
         self.Text(Label, LabelPos, FontIdx=1, ColorIdx=ColorTextIdx)
 
-        return self.CheckboxStates[Label]["checked"]
+        # Return the checkbox's checked state and hovered state
+        return self.CheckboxStates[Label]["checked"], hovered
 
     def ChangeActiveMenu(self, MenuName: str):
         self.ActiveMenu = MenuName
@@ -209,28 +268,6 @@ class UiManager:
 
     def CreateButton(self):
         self.Buttons.append([False, False])
-
-    def Button(self, Label: str, Pos: Nat2, OnClick: any, ButtonIdx: int, ColorTextIdx: int, ColorHoverIdx: int, ColorNormalIdx: int, FontIdx: int = 0):
-        TextRect: Rect = self.Text(Label, Pos, FontIdx, ColorTextIdx, NoDraw=True)
-        ButtonRect: Rect = Rect(TextRect.XY + -10, TextRect.WH + 20)
-
-        Color = self.ColorOnHover(ButtonRect, ColorHoverIdx, ColorNormalIdx)
-
-        if self.RectIsHover(ButtonRect):
-            self.Buttons[ButtonIdx][1] = True
-            if self.IsClick("Left") and not self.Buttons[ButtonIdx][0]:
-                OnClick()
-                self.Buttons[ButtonIdx][0] = True
-            elif not self.IsClick("Left") and self.Buttons[ButtonIdx][0]:
-                self.Buttons[ButtonIdx][0] = False
-        else:
-            self.Buttons[ButtonIdx][0] = False
-            self.Buttons[ButtonIdx][1] = False
-
-        self.Rect(Pos + -10, ButtonRect.WH, ColorIdx=Color)
-        self.Text(Label, Pos, FontIdx, ColorTextIdx)  
-
-        return Rect(Pos + -10, ButtonRect.WH) 
 
     def Rect(self, Pos: Nat2, Size: Nat2, ColorIdx: int):
         """Draw a rectangle on the surface."""
